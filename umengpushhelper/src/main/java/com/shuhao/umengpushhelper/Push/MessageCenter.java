@@ -45,7 +45,6 @@ public class MessageCenter {
 
     public static void init(Context context) {
         Instance = new MessageCenter(context.getApplicationContext());
-
     }
 
     public static MessageCenter getInstance() {
