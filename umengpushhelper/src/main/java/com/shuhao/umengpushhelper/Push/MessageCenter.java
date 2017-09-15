@@ -1,9 +1,8 @@
 package com.shuhao.umengpushhelper.Push;
 
+import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
-
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,6 +12,8 @@ import java.util.regex.Pattern;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+
+import static android.content.Context.NOTIFICATION_SERVICE;
 
 
 /**
@@ -197,12 +198,9 @@ public class MessageCenter {
     public static final int ACTION_DISMISS = 11;
     public static final int EXTRA_ACTION_NOT_EXIST = -1;
 
-    public void sendParseBroadcast(String v) {
-        Intent intent = new Intent(EXTRA_KEY_ACTION);
-        intent.putExtra(EXTRA_KEY_MSG, v);
-        intent.putExtra(EXTRA_KEY_ACTION,
-                ACTION_DISMISS);
-        context.sendBroadcast(intent);
+    public void cancel(){
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
     }
 
     public void checkAction() {
@@ -212,7 +210,7 @@ public class MessageCenter {
         Log.d("message", MessageCenter.getInstance().getMessageHashMap().size() + "");
         for (final Message message : MessageCenter.getInstance().getMessageHashMap()) {
             if (!message.isParsed()) {
-
+                cancel();
                 MessageCenter.getInstance().beginTransaction();
                 message.setParsed(true);
                 MessageCenter.getInstance().commitTransaction();
