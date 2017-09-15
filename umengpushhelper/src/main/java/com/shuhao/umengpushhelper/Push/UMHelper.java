@@ -16,7 +16,9 @@ import com.umeng.message.UmengNotificationClickHandler;
 import com.umeng.message.common.UmLog;
 import com.umeng.message.entity.UMessage;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 
 import static com.sina.util.dnscache.AppConfigUtil.getApplicationContext;
@@ -42,11 +44,17 @@ public class UMHelper {
                 try {
                     Log.d("dealWithCustomAction", uMessage.extra.toString());
                     if("open_url".equals(uMessage.extra.get("enum_action"))) {
-
+                        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Date time = null;
+                        try {
+                            time = format.parse(uMessage.extra.get("end_date"));
+                        }catch (Exception e){
+                            time = format.parse("2222-09-15 16:51:00");
+                        }
                         Message message = new Message.MessageBuild(uMessage.extra.toString())
                                 .setNeedPOP(true)
                                 .setMsgID(uMessage.msg_id)
-                                .setEndTime( new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(uMessage.extra.get("end_date")))
+                                .setEndTime(time)
                                 .setTitle(uMessage.title)
                                 .setConfirm("查看页面")
                                 .setCancel("取消")
