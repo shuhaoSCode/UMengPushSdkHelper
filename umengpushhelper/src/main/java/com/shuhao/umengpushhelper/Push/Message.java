@@ -32,7 +32,7 @@ public class Message extends RealmObject {
         isParsed = build.isParsed;
         end_time = build.end_time;
     }
-    public String getMsg_id(){
+    public  String getMsg_id(){
         return msg_id;
     }
     public String getExtString(){

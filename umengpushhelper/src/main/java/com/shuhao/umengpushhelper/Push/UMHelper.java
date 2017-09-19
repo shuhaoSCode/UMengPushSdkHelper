@@ -19,7 +19,6 @@ import com.umeng.message.entity.UMessage;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 
 import static com.sina.util.dnscache.AppConfigUtil.getApplicationContext;
 
@@ -36,10 +35,10 @@ public class UMHelper {
         registUMHandle(mPushAgent,handler);
         registUMClickHandle(mPushAgent);
     }
-    private static void registUMHandle(PushAgent mPushAgent,final Handler handler){
+    private static void registUMHandle(PushAgent mPushAgent, final Handler handler){
         UmengMessageHandler messageHandler = new UmengMessageHandler() {
             @Override
-            public void dealWithNotificationMessage(Context context, UMessage uMessage) {
+            public void dealWithNotificationMessage(Context context,UMessage uMessage) {
                 super.dealWithNotificationMessage(context, uMessage);
                 try {
                     Log.d("dealWithCustomAction", uMessage.extra.toString());
@@ -153,21 +152,5 @@ public class UMHelper {
 //                sendBroadcast(new Intent(UPDATE_STATUS_ACTION));
             }
         });
-    }
-
-    public static HashMap<String, String> stringToMap(String string) {
-        if (string.startsWith("{")) {
-            string = string.replace("{", "");
-        }
-        if (string.endsWith("}"))
-            string = string.replace("}", "");
-        string = string.replaceAll(" ", "").replaceAll("(\t|\r\n|\n|\u001a|\0)", "").replaceAll("\\s*", "");
-        HashMap<String, String> map = new HashMap<>();
-        String[] pairs = string.split(",");
-        for (int i = 0; i < pairs.length; i++) {
-            String pair = pairs[i];
-            map.put(pair.substring(0, pair.indexOf("=")), pair.substring(pair.indexOf("=") + 1));
-        }
-        return map;
     }
 }
