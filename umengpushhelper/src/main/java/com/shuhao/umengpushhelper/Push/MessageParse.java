@@ -11,6 +11,6 @@ public interface MessageParse {
     void openURL(String url);
     void openbroser(String url);
     Map<String,String> getUserMap();
-    void openLoginDialog();
+    boolean openLoginDialog();
     void setLoginCallBack(LoginCallBack loginCallBack);
 }
