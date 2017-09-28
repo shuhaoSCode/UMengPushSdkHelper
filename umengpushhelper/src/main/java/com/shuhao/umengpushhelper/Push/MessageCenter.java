@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.util.Log;
 
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,7 +22,7 @@ import static android.content.Context.NOTIFICATION_SERVICE;
  */
 
 public class MessageCenter {
-//    RealmResults<Message> messageHashMap = null;
+    //    RealmResults<Message> messageHashMap = null;
     private static Context context ;
     private static MessageCenter Instance = null;
     private static Object lock = new Object();
@@ -50,6 +51,14 @@ public class MessageCenter {
         }
         return Instance;
     }
+    public void setMessageHashMapInBackground(final Message message){
+        Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                realm.insertOrUpdate(message);
+            }
+        });
+    }
     public void setMessageHashMap(final Message message){
 //        Log.d("addmesssage",messageHashMap.size()+"");
         Realm.getDefaultInstance().executeTransactionAsync(new Realm.Transaction() {
@@ -57,16 +66,28 @@ public class MessageCenter {
             public void execute(Realm realm) {
                 realm.insertOrUpdate(message);
             }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d("message__^^",MessageCenter.getInstance().getMessageHashMap().size()+"");
+                if(messageParse!=null)
+                    messageParse.createTransactionSuccess().onSuccess();
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                // transaction is automatically rolled-back, do any cleanup here
+            }
         });
 //        Log.d("addmesssage",messageHashMap.size()+"");
     }
-//    public Message getMessage(int index){
+    //    public Message getMessage(int index){
 //       return messageHashMap.get(index);
 //    }
     public Message getMessage(String msg_id){
         return realm.where(Message.class).greaterThan("end_time",new Date()).equalTo("isParsed",false).equalTo("msg_id",msg_id).findFirst();
     }
-//    public void parsed(int index){
+    //    public void parsed(int index){
 //        realm.beginTransaction();
 //        messageHashMap.deleteFromRealm(index);
 //
@@ -84,7 +105,7 @@ public class MessageCenter {
         RealmResults<Message> t = realm.where(Message.class).greaterThan("end_time",new Date()).equalTo("msg_id",message.getMsg_id()).findAll();
         return t.size()>0;
     }
-//    public void initMap(){
+    //    public void initMap(){
 //        messageHashMap = realm.where(Message.class)
 //                .greaterThan("end_time",new Date())
 //                .findAll();
@@ -100,23 +121,29 @@ public class MessageCenter {
         realm.commitTransaction();
     }
     public RealmResults<Message> getMessageHashMap(){
+
         return realm.where(Message.class)
                 .greaterThan("end_time",new Date())
                 .equalTo("isParsed",false)
                 .findAll();
     }
+    //    HashMap<String,MessageParse> messageParseHashMap ;
     volatile MessageParse messageParse = null;
     public void registMessageParse(MessageParse messageParse){
-        this.messageParse = messageParse;
+        Log.d("message____size","^^");
+        this.messageParse = null;
+        System.gc();
+        this.messageParse = new WeakReference<MessageParse>(messageParse).get();
 //        context.sendBroadcast(new Intent("UM_Message"));
     }
+
     public void unregistMessageParse(){
         messageParse = null;
     }
     private boolean checkMessage(Message message){
         String storedHashMapString = message.getExtString();
         if (!"null".equals(storedHashMapString) || null != storedHashMapString ) {
-            HashMap<String, String> testHashMap2 = stringToMap(storedHashMapString);
+            HashMap<String, String> testHashMap2 = UMHelper.stringToMap(storedHashMapString);
             if (testHashMap2.get("end_date") != null && "".equals(testHashMap2.get("end_date"))) {
                 try {
                     if (new Date().getTime() > new SimpleDateFormat("yyyy-MM-ddHH:mm:ss").parse(testHashMap2.get("end_date")).getTime()) {
@@ -140,7 +167,7 @@ public class MessageCenter {
         messageParse.setLoginCallBack(null);
         String storedHashMapString = message.getExtString();
         if (!"null".equals(storedHashMapString) || null != storedHashMapString ) {
-            HashMap<String, String> testHashMap2 = stringToMap(storedHashMapString);
+            HashMap<String, String> testHashMap2 = UMHelper.stringToMap(storedHashMapString);
             if (testHashMap2.get("end_date") != null && "".equals(testHashMap2.get("end_date"))) {
                 try {
                     if (new Date().getTime() > new SimpleDateFormat("yyyy-MM-ddHH:mm:ss").parse(testHashMap2.get("end_date")).getTime()) {
@@ -165,7 +192,13 @@ public class MessageCenter {
                                 return message;
                             }
                         });
-                        messageParse.openLoginDialog();
+                        if(!messageParse.openLoginDialog()){
+                            MessageCenter.getInstance().beginTransaction();
+                            message.setParsed(false);
+                            MessageCenter.getInstance().commitTransaction();
+                            MessageCenter.getInstance().setMessageHashMap(message);
+                            MessageCenter.getInstance().cancelPOP(message);
+                        }
                         // MessageCenter.getInstance().parsed(message); // remove message
                     }
                     return;
@@ -211,8 +244,10 @@ public class MessageCenter {
     }
     public void checkAction(){
         Log.d("message____size",MessageCenter.getInstance().getMessageHashMap().size()+"");
-        if(messageParse == null )
+        if(messageParse == null ) {
+            Log.d("message____size",MessageCenter.getInstance().getMessageHashMap().size()+"");
             return;
+        }
         Log.d("message",MessageCenter.getInstance().getMessageHashMap().size()+"");
         for(final Message message : MessageCenter.getInstance().getMessageHashMap()) {
             if(!message.isParsed()) {
@@ -234,19 +269,12 @@ public class MessageCenter {
             }
         }
     }
-    public static HashMap<String,String> stringToMap(String string){
-        if(string.startsWith("{")){
-            string =  string.replace("{","");
+    public void cancelPOP(Message message){
+        if(message !=null) {
+            MessageCenter.getInstance().beginTransaction();
+            message.setNeedPOP(false);
+            MessageCenter.getInstance().commitTransaction();
+            MessageCenter.getInstance().setMessageHashMap(message);
         }
-        if( string.endsWith("}"))
-            string =  string.replace("}","");
-        string = string.replaceAll(" ","").replaceAll("(\t|\r\n|\n|\u001a|\0)","").replaceAll("\\s*","");
-        HashMap<String,String> map = new HashMap<>();
-        String[] pairs = string.split(",");
-        for (int i=0;i<pairs.length;i++) {
-            String pair = pairs[i];
-            map.put(pair.substring(0,pair.indexOf("=")), pair.substring(pair.indexOf("=")+1));
-        }
-        return map;
     }
 }

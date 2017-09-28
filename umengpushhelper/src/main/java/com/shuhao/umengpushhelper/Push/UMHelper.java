@@ -16,9 +16,16 @@ import com.umeng.message.UmengNotificationClickHandler;
 import com.umeng.message.common.UmLog;
 import com.umeng.message.entity.UMessage;
 
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static com.sina.util.dnscache.AppConfigUtil.getApplicationContext;
 
@@ -152,5 +159,21 @@ public class UMHelper {
 //                sendBroadcast(new Intent(UPDATE_STATUS_ACTION));
             }
         });
+    }
+
+    public static HashMap<String, String> stringToMap(String string) {
+        if (string.startsWith("{")) {
+            string = string.replace("{", "");
+        }
+        if (string.endsWith("}"))
+            string = string.replace("}", "");
+        string = string.replaceAll(" ", "").replaceAll("(\t|\r\n|\n|\u001a|\0)", "").replaceAll("\\s*", "");
+        HashMap<String, String> map = new HashMap<>();
+        String[] pairs = string.split(",");
+        for (int i = 0; i < pairs.length; i++) {
+            String pair = pairs[i];
+            map.put(pair.substring(0, pair.indexOf("=")), pair.substring(pair.indexOf("=") + 1));
+        }
+        return map;
     }
 }
