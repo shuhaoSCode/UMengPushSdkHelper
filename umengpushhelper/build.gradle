@@ -29,6 +29,6 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.github.shuhaoSCode:UMengPush:76b72598dc'
-    compile 'com.github.shuhaoSCode:HttpDns:8a84ea77fe'
+    compile 'com.github.shuhaoSCode:HttpDns:1.0.1'
     testCompile 'junit:junit:4.12'
 }
