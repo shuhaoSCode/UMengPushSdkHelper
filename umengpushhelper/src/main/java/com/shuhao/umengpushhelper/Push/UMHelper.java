@@ -37,12 +37,15 @@ public class UMHelper {
     private final static String TAG = "UMHelper";
     public static void initUM(Context context, Handler handler){
         PushAgent mPushAgent = PushAgent.getInstance(context);
-        mPushAgent.setNotificationPlaySound(MsgConstant.NOTIFICATION_PLAY_SDK_ENABLE);
+//        mPushAgent.setNotificationPlaySound(MsgConstant.NOTIFICATION_PLAY_SERVER);
+        mPushAgent.setNotificationPlaySound(MsgConstant.NOTIFICATION_PLAY_SERVER);
+        mPushAgent.setNotificationPlayLights(MsgConstant.NOTIFICATION_PLAY_SERVER);
+        mPushAgent.setNotificationPlayVibrate(MsgConstant.NOTIFICATION_PLAY_SERVER);
         regist(mPushAgent);
         registUMHandle(mPushAgent,handler);
         registUMClickHandle(mPushAgent);
     }
-    private static void registUMHandle(PushAgent mPushAgent, final Handler handler){
+    private static void registUMHandle(PushAgent mPushAgent,final Handler handler){
         UmengMessageHandler messageHandler = new UmengMessageHandler() {
             @Override
             public void dealWithNotificationMessage(Context context,UMessage uMessage) {
@@ -52,6 +55,7 @@ public class UMHelper {
                     if("open_url".equals(uMessage.extra.get("enum_action"))) {
                         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                         Date time = null;
+
                         try {
                             time = format.parse(uMessage.extra.get("end_date"));
                         }catch (Exception e){
@@ -66,7 +70,7 @@ public class UMHelper {
                                 .setCancel("取消")
                                 .setContent(uMessage.text)
                                 .build();
-                        MessageCenter.getInstance().setMessageHashMap(message);
+                        MessageCenter.getInstance().setMessageHashMapInBackground(message);
 
                     }
                 }catch (Exception e){
@@ -128,12 +132,7 @@ public class UMHelper {
             @Override
             public void handleMessage(Context context, UMessage uMessage) {
                 Message message =  MessageCenter.getInstance().getMessage(uMessage.msg_id);
-                if(message !=null) {
-                    MessageCenter.getInstance().beginTransaction();
-                    message.setNeedPOP(false);
-                    MessageCenter.getInstance().commitTransaction();
-                    MessageCenter.getInstance().setMessageHashMap(message);
-                }
+                MessageCenter.getInstance().cancelPOP(message);
                 super.handleMessage(context, uMessage);
 
             }
@@ -159,6 +158,7 @@ public class UMHelper {
 //                sendBroadcast(new Intent(UPDATE_STATUS_ACTION));
             }
         });
+
     }
 
     public static HashMap<String, String> stringToMap(String string) {
